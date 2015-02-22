@@ -1,0 +1,76 @@
+---
+title: "Practical Machine Leaning Project"
+output: html_document
+---
+###Introduction to the Project
+
+This course project looks at personal activity data as a means to build a prediction model to predict the effectiveness of a workout given the movement of an individual during said workout.
+
+There are 5 classes of workout results.  By using a training dataset, we will create a model that predicts the class based on the movement of the individual doing the workout.
+
+###Dataset
+
+First, we bring in the data for the training and test data to be used in the model.
+```{r}
+traind <- read.csv("C:\\Users\\lisar\\Documents\\R\\PML\\pml-training.csv")
+testd <- read.csv("C:\\Users\\lisar\\Documents\\R\\PML\\pml-testing.csv")
+
+traind$cvtd_timestamp <- NULL
+traind$user_name <- NULL
+traind$raw_timestamp_part_1 <- NULL
+traind$raw_timestamp_part_2 <- NULL
+traind$num_window <- NULL
+for (col_name in names(traind)){
+        if (col_name %in% c("user_name", "classe")){
+                traind[ , col_name] <- as.factor(traind[ , col_name])
+        } else {
+                traind[ , col_name] <- as.numeric(traind[ , col_name])
+                if (nrow(traind[is.na(traind[ , col_name]) ,])){
+                        traind[ ,col_name] <- NULL
+                }
+        }
+}
+
+# column names to use for model (excludes variables that cannot predict the results)
+colrem <- c("X" , "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", 
+             "new_window", "num_window", "cvtd_timestamp")
+colsave <- setdiff(names(traind), colrem)
+traind2 <- subset(traind, T, colsave)
+```
+
+###Modeling
+
+Next, we will use data in the training set to fit to a model. A random forest model is very accurate for this type of data, as the results will show.
+
+```{r eval=FALSE}
+library(caret)
+set.seed(4854)
+
+# partition data for modeling
+TrainD <- createDataPartition(y=traind2$classe, p=0.7, list=F)
+traind3 <- traind2[TrainD,]
+testd3 <- traind2[-TrainD,]
+
+# using the random forest model to predict classe results
+testFit <-train(classe ~ ., data=traind3, method="rf")
+```
+
+Here we make a confusion matrix to view the model's accuracy.
+
+```{r eval=FALSE}
+confusionMatrix(predict(testFit), traind3$classe)
+```
+
+###Validating the Random Forest Model
+
+Let's test the model on the test dataset now.
+
+```{r eval=FALSE}
+confusionMatrix(predict(testFit), testd3$classe)
+```
+
+This shows that our model is very accurate for these datasets.
+
+###Summary
+
+The random forest model gave us 99%+ accuracy. Based on the data available and the accuracy level, this model is a good predictor of the workout results given the movement data recorded.
